@@ -1,0 +1,9 @@
+new [THEME_NAME] - добавить новую тему
+add [THEME_NAME] [NAME_OF_ALTERNATIVE] - добавить альтернативу выбора в тему
+remove [THEME_NAME] - удалить тему и все альтернативы
+list - получить список тем
+check [THEME_NAME] - получить состояние темы, список альтернатив выбора и их рейтинги
+open [THEME_NAME] - открыть тему для голосования
+close [THEME_NAME] - закрыть тему для голосования
+vote [THEME_NAME] [NAME_OF_ALTERNATIVE] [NUMBER_OF_VOTES] - проголосовать за определенную альтернативу в теме
+disconnect - отключиться от сервера
