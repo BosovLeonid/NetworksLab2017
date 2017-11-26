@@ -7,7 +7,8 @@ SOURCES += main.c \
     readn.c \
     decoder.c \
     concat.c \
-    sendmsg.c
+    sendmsg.c \
+    init.c
 
 HEADERS += \
     client.h

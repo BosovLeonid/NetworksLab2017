@@ -1,6 +1,7 @@
 #include <server.h>
 struct user{
     int socket;
+    char *name;
     char *ip;
     int port;
     int id;
@@ -139,6 +140,36 @@ DWORD WINAPI *connection_handler(void *args)
                 users[user_id] = ClearUser;
                 break;
             }
+            case AUTHORIZATION:{
+                char word_name[256], *tmp_name;
+                char *name = strtok(NULL," ");
+                FILE *auth;
+                auth = fopen("auth.txt", "r+");
+                if(auth == NULL){
+                     return 0;
+                }
+                answer = "Success.\n";
+                while (fgets(word_name, sizeof(word_name), auth))
+                {
+                tmp_name = strtok(word_name,";");
+                if(strcmp(tmp_name, name) == 0){
+                    answer = "Error.\n";
+                    break;
+                }
+                }
+                if(strcmp(answer, "Success.\n") == 0){
+                    fprintf(auth, "%s;\n", name);
+                    users[user_id].name = name;
+                    printf("Socket %d logined as %s.\n", csocket, users[user_id].name);
+                }
+                fclose(auth);
+                int n = sendmsg(csocket);
+                if (n < 0) {
+                    perror("Error writing to socket.\n");
+                    return 0;
+                }
+                break;
+                }
             default:    {
                 printf("Command %d not found\n", command);
                 answer = "Something goes wrong, try again.\n";

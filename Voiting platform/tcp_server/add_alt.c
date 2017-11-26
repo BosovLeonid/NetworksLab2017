@@ -1,7 +1,7 @@
 #include <server.h>
 // Добавляем альтернативу выбора в теме
 void add_alt(char *theme, char *alt){
-    char *PATH, word_theme[255], word_alt[255], *tmp_theme, *tmp_alt;
+    char *PATH, word_theme[256], word_alt[256], *tmp_theme, *tmp_alt;
     FILE *alts, *themes;
     bool is_theme = false;
 

@@ -1,7 +1,7 @@
 #include <server.h>
 // Добавляем новую тему
 void add_theme(char *name){
-    char *PATH, word[255], *tmp;
+    char *PATH, word[256], *tmp;
     FILE *themes;
     PATH = concat(CURRENT_DIR,"/THEMES/");
     chdir(PATH);

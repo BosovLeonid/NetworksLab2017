@@ -5,7 +5,12 @@ int main(int argc, char *argv[])
     WSADATA wsa;
     SOCKET serverSocket, accSocket;
     struct sockaddr_in server,client;
+
     setlocale(LC_ALL, "Rus");
+
+    printf("Voiting/raiting server ver.3\n");
+    printf("Server starting...\n");
+
     // Указываем рабочий каталог
     getcwd(CURRENT_DIR, 50);
 
@@ -49,7 +54,7 @@ int main(int argc, char *argv[])
         printf("Thread created for: %s:%d, socket: %d\n",inet_ntoa(client.sin_addr) ,ntohs(client.sin_port), args.socket);
     }
 
-    if ((INT)accSocket < 0)
+    if (accSocket < 0)
     {
         perror("Accept failed.\n");
         return 1;

@@ -18,6 +18,7 @@
 #define CHANGE 6
 #define VOTE 7
 #define DISCONNECT 8
+#define AUTHORIZATION 9
 char CURRENT_DIR[50];
 char *answer;
 int g_error;

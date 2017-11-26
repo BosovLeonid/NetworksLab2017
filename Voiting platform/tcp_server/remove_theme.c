@@ -3,20 +3,20 @@
 void remove_theme(char *name){
     int i;
     char *PATH, *tmp_theme;
-    char word_theme[255], stack[255];
+    char word_theme[256], stack[256];
     FILE *themes, *tmp;
     bool is_theme = false;
 
     PATH = concat(CURRENT_DIR,"/THEMES/");
     chdir(PATH);
     // Проверяем наличие темы
-    themes = fopen("themes.txt","a+");
+    themes = fopen("themes.txt","r");
     if (themes == NULL){
         printf("Error while opening file themes.txt.\n");
         answer = "An error has occurred on server.\n";
         return;
     }
-    tmp = fopen("tmp.txt", "w+");
+    tmp = fopen("tmp.txt", "w");
     if (themes == NULL){
         printf("Error while opening file tmp.txt.\n");
         answer = "An error has occurred on server.\n";
@@ -37,6 +37,9 @@ void remove_theme(char *name){
     fclose(themes);
     fclose(tmp);
 
+    remove("themes.txt");
+    rename("tmp.txt", "themes.txt");
+
     // Если темы нет, то сообщаем пользователю, что указанной темы нет
     if(!is_theme){
         answer = concat(name, " doesn't exists.\n");
@@ -46,12 +49,12 @@ void remove_theme(char *name){
         return;
     }
 
-    remove("themes.txt");
-    rename("tmp.txt", "themes.txt");
-
-    PATH = concat(PATH,name);
+    PATH = concat(PATH, name);
     chdir(PATH);
     remove("alts.txt");
+    PATH = concat(CURRENT_DIR,"/THEMES/");
+    chdir(PATH);
+    rmdir(name);
     chdir(CURRENT_DIR);
     answer = concat("Theme ", name);
     answer = concat(answer, " deleted.\n");

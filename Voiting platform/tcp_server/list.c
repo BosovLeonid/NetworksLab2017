@@ -19,5 +19,8 @@ char *list(){
         tmp = concat(tmp, "\n");
     }
     fclose(themes);
-    return tmp;
+    if (strcmp(tmp, "") == 0)
+        return "There is no themes.\n";
+    else
+        return tmp;
 }

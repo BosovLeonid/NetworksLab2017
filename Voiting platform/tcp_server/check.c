@@ -1,7 +1,7 @@
 #include <server.h>
 // Получить информацию об определенной теме
 void check(char *theme){
-    char *PATH, word_theme[255], word_alt[255], *tmp_theme, *tmp_alt;
+    char *PATH, word_theme[256], word_alt[256], *tmp_theme, *tmp_alt;
     FILE *alts, *themes;
     bool is_theme = false;
 
@@ -38,8 +38,7 @@ void check(char *theme){
 
     alts = fopen("alts.txt", "r");
     if (alts == NULL){
-        printf("Error while opening file alts.txt in theme %s.\n", theme);
-        answer = "An error has occurred on server.\n";
+        answer = concat(answer, "Theme has no alternatives.\n");
         chdir(CURRENT_DIR);
         free(PATH);
         return;

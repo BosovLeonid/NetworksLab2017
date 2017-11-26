@@ -1,6 +1,8 @@
 #include <client.h>
 int decoder(char *command){
-    if(strcmp(command, "new") == 0)
+    if(strcmp(command, "help") == 0)
+        return HELP;
+    else if(strcmp(command, "new") == 0)
         return NEW;
     else if(strcmp(command, "add") == 0)
         return ADD;
@@ -16,8 +18,6 @@ int decoder(char *command){
         return VOTE;
     else if(strcmp(command, "disconnect") == 0)
         return DISCONNECT;
-    else if(strcmp(command, "help") == 0)
-        return HELP;
     else
         return -1;
 }

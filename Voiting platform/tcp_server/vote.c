@@ -1,9 +1,9 @@
 #include <server.h>
 // Проголосовать за альтернативу в теме
 void vote(char *theme, char *alt, int votes){
-    char *PATH, word_theme[255], word_alt[255], *tmp_theme, *tmp_alt;
+    char *PATH, word_theme[256], word_alt[256], stack[256], *tmp_theme, *tmp_alt;
     int file_pos, strl;
-    FILE *themes, *alts;
+    FILE *themes, *alts, *tmp;
     bool is_theme = false, is_opened = false, is_alt = false;
 
     PATH = concat(CURRENT_DIR,"/THEMES/");
@@ -12,7 +12,7 @@ void vote(char *theme, char *alt, int votes){
     themes = fopen("themes.txt","r+");
     if (themes == NULL){
         printf("Error while opening file themes.txt.\n");
-        answer = "An error has occurred on server.\n";
+        answer = "Error: Cannot open file themes.txt.\n";
         chdir(CURRENT_DIR);
         free(PATH);
         return;
@@ -34,7 +34,8 @@ void vote(char *theme, char *alt, int votes){
 
     // Если темы нет, то сообщаем пользователю, что указанной темы нет
     if(!is_theme){
-        answer = concat(theme, " doesn't exists.\n");
+        answer = concat("Error: ", theme);
+        answer = concat(answer, " doesn't exists.\n");
         chdir(CURRENT_DIR);
         free(PATH);
         return;
@@ -42,7 +43,8 @@ void vote(char *theme, char *alt, int votes){
 
     // Если тема закрыта для голосования, то сообщаем пользователю об этом
     if(!is_opened){
-        answer = concat(theme, " closed for voting.\n");
+        answer = concat("Error: ", theme);
+        answer = concat(answer, " closed for voting.\n");
         chdir(CURRENT_DIR);
         free(PATH);
         return;
@@ -52,44 +54,49 @@ void vote(char *theme, char *alt, int votes){
     chdir(PATH);
     file_pos = 0;
 
-    alts = fopen("alts.txt", "r+");
+    alts = fopen("alts.txt", "r");
     if (alts == NULL){
-        printf("Error while opening file alts.txt in theme %s.\n", theme);
-        answer = "An error has occurred on server.\n";
+        answer = "Error: Theme has no alternatives.\n";
         chdir(CURRENT_DIR);
         free(PATH);
         return;
     }
+    tmp = fopen("tmp.txt", "w");
     while (fgets(word_alt, sizeof(word_alt), alts))
     {
-    strl = strlen(word_alt);
-    file_pos = file_pos + strl;
-    tmp_alt = strtok(word_alt,"-");
-    if(strcmp(tmp_alt,alt) == 0){
-        is_alt = true;
-        file_pos = file_pos - strl + strlen(tmp_alt) + 1;
-        tmp_alt = strtok(NULL, ";");
-        int cur_votes = atoi(tmp_alt);
-        cur_votes = cur_votes + votes;
-        fseek(alts, file_pos, SEEK_SET);
-        char buf[10], *str;
-        itoa(cur_votes, buf, 10);
-        str = buf;
-        str = concat(str, ";\n");
-        fputs(str, alts);
-        fclose(alts);
-        answer = "Votes have been added.\n";
-        chdir(CURRENT_DIR);
-        free(PATH);
-        return;
+    int i;
+    for (i = 0; word_alt[i] != '\0'; i++){
+        stack[i] = word_alt[i];
     }
-    file_pos ++;
+    stack[i] = '\0';
+    tmp_alt = strtok(word_alt,"-");
+    if(strcmp(tmp_alt, alt) == 0){
+        is_alt = true;
+        char *str = "";
+        str = tmp_alt;
+        str = concat(str, "-");
+        int cur_votes = atoi(strtok(NULL,";"));
+        cur_votes = cur_votes + votes;
+        char buf[10], *tmp_votes;
+        itoa(cur_votes, buf, 10);
+        tmp_votes = buf;
+        str = concat(str, tmp_votes);
+        str = concat(str, ";\n");
+        fprintf(tmp, "%s", str);
+        answer = "Votes have been added.\n";
+    }
+    else fprintf(tmp,"%s",stack);
     }
     fclose(alts);
+    fclose(tmp);
+
+    remove("alts.txt");
+    rename("tmp.txt", "alts.txt");
 
     // Если альтернативы нет, то сообщаем пользователю, что её нет.
     if(!is_alt){
-        answer = concat(alt, " doesn't exists in theme ");
+        answer = concat("Error: ", alt);
+        answer = concat(answer, " doesn't exists in theme ");
         answer = concat(answer, theme);
         answer = concat(answer, ".\n");
         chdir(CURRENT_DIR);
