@@ -31,7 +31,7 @@ int init(int argc, char *argv[]){
     if (connect(csocket , (struct sockaddr *)&server_addr , sizeof(server_addr)) < 0)
     {
         printf("Connection error.\n");
-        return 10;
+        return -1;
     }
     return csocket;
 }
