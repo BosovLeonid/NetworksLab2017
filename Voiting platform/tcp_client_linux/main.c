@@ -1,298 +1,162 @@
 #include <client.h>
+const char *LOCALE = "Rus";
 int main(int argc , char *argv[])
 {
-    int csocket;
-    uint16_t portno;
-    struct sockaddr_in server_addr;
-    struct hostent *server;
+    char buffer[BUFLEN_MAX];
+    char answer[BUFLEN_MAX];
+    char *msg = "";
+    int limit_of_votes = 10;
+    bool is_auth = false;
 
-    setlocale(LC_ALL, "Rus");
+    setlocale(LC_ALL, LOCALE);
+    printf("Voiting/raiting client ver.4\n");
+    printf("Client starting...\n");
 
     if (argc < 3) {
-        printf("Params error.\nExample:client-win ""server_ip"" ""server_port""\n\n");
+        printf("Params ERROR.\nExample:client-win ""server_ip"" ""server_port""\n\n");
         exit(0);
     }
 
-    portno = (uint16_t) atoi(argv[2]);
-
-    csocket = socket(AF_INET, SOCK_STREAM, 0);
-
-    if(csocket < 0){
-        perror("Error opening socket.\n");
-        exit(1);
+    csocket = init(argc, argv);
+    if(csocket < 1){
+        exit(-1);
     }
+    else
+        printf("Connected to server.\n");
 
-    server = gethostbyname(argv[1]);
-
-    if (server == NULL) {
-        fprintf(stderr, "Error, no such host.\n");
-        exit(0);
-    }
-
-    bzero((char *) &server_addr, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    bcopy(server->h_addr, (char *) &server_addr.sin_addr.s_addr, (size_t) server->h_length);
-    server_addr.sin_port = htons(portno);
-
-    // Connect to remote server
-    if (connect(csocket , (struct sockaddr *)&server_addr , sizeof(server_addr)) < 0)
-    {
-        printf("Connection error.\n");
-        return 10;
-    }
-
-    printf("Enter command: \n");
-    while(1){
-        char buffer[BUFLEN];
-        char answer[BUFLEN];
-        memset(buffer,0,strlen(buffer));
-        memset(answer,0,strlen(answer));
-        printf("Command: ");
-        fgets(buffer, BUFLEN, stdin);
+    printf("\nEnter your nickname:\n");
+    while(!is_auth){
+        memset(buffer,0,sizeof(buffer));
+        memset(answer, 0, sizeof(answer));
+        printf("\nNickname: ");
+        fgets(buffer, BUFLEN_MAX, stdin);
         buffer[strlen(buffer) - 1] = '\0';
-        char *tmp = buffer;
-        char *com = strtok_r(tmp, " ", &tmp);
-        char *theme = strtok_r(tmp, " ", &tmp);
-        char *alt = strtok_r(tmp, " ", &tmp);
-        char *votes = strtok_r(tmp, " ", &tmp);
-        char *trash = strtok_r(tmp, " ", &tmp);
-        char *msg = "";
-        int key = decoder(com);
+        char *saveptr;
+        char *data = strtok_r(buffer, " ", &saveptr);
+        char *trash = strtok_r(NULL, " ", &saveptr);
+        if(data == NULL){
+            printf("You did not enter anything.\n");
+            continue;
+        }
+        msg = "9 ";
+        msg = concat(msg, data);
+        if(trash != NULL){
+            printf("You entered too much.\n");
+            continue;
+        }
+        send_read(csocket, msg, answer);
+        if(strcmp(answer,"Error.\n") == 0){
+            printf("This nickname is already in database.\n");
+            printf("*******************************************************************************\n");
+            continue;
+        }
+        else{
+            is_auth = true;
+            printf("You logined as %s.\n", data);
+        }
+        printf("*******************************************************************************\n");
+    }
+
+    while(1){
+        free(buffer);
+        free(answer);
+        memset(buffer, 0, sizeof(buffer));
+        memset(answer, 0, sizeof(answer));
+        printf("You have %d votes to vote.\n", limit_of_votes);
+        printf("\nEnter command: ");
+        fgets(buffer, BUFLEN_MAX, stdin);
+        buffer[strlen(buffer) - 1] = '\0';
+        char *saveptr;
+        char *com_argv[4];
+        char *com = strtok_r(buffer, " ", &saveptr);
+        com_argv[1] = strtok_r(NULL, " ", &saveptr);
+        com_argv[2] = strtok_r(NULL, " ", &saveptr);
+        com_argv[3] = strtok_r(NULL, " ", &saveptr);
+        com_argv[4] = strtok_r(NULL, " ", &saveptr);
+        msg = "";
+        if (com == NULL){
+            printf("\nYou did not enter anything!\n\n");
+            continue;
+        }
+        int key = coding_comToInt(com);
         switch(key){
             case HELP:{
-                char msg_key[2];
-                snprintf(msg_key, sizeof(msg_key),"%d",key);
-                msg = msg_key;
-                if( theme != NULL ){
-                    printf("Too much arguments. Try again.\n");
+                msg = make_massage(0, com_argv, key);
+                if(strcmp(msg, "Error") == 0)
                     break;
-                }
-                int n = sendmsg_to(csocket, msg);
-                if( n < 0 ){
-                    perror("Error writing to socket.\n");
-                    return 20;
-                }
-                int l = readn(csocket, answer);
-                if ( l < 0 ){
-                    printf("Error reading from socket.\n");
-                }
+                send_read(csocket, msg, answer);
                 printf(answer);
                 break;
             }
             case NEW:  {
-                char msg_key[2];
-                snprintf(msg_key, sizeof(msg_key),"%d",key);
-                msg = msg_key;
-                msg = concat(msg, " ");
-                if( theme == NULL ){
-                    printf("Too few arguments. Try again.\n");
+                msg = make_massage(1, com_argv, key);
+                if(strcmp(msg,"Error") == 0)
                     break;
-                }
-                msg = concat(msg, theme);
-                if( alt != NULL ){
-                    printf("Too much arguments. Try again.\n");
-                    break;
-                }
-                int n = sendmsg_to(csocket, msg);
-                if( n < 0 ){
-                    perror("Error writing to socket.\n");
-                    return 20;
-                }
-                int l = readn(csocket, answer);
-                if ( l < 0 ){
-                    printf("Error reading from socket.\n");
-                }
+                send_read(csocket, msg, answer);
                 printf(answer);
                 break;
             }
             case ADD: {
-                char msg_key[2];
-                snprintf(msg_key, sizeof(msg_key),"%d",key);
-                msg = msg_key;
-                msg = concat(msg, " ");
-                if( theme == NULL ){
-                    printf("Too few arguments. Try again.\n");
+                msg = make_massage(2, com_argv, key);
+                if(strcmp(msg,"Error") == 0)
                     break;
-                }
-                msg = concat(msg, theme);
-                msg = concat(msg, " ");
-                if( alt == NULL ){
-                    printf("Too few arguments. Try again.\n");
-                    break;
-                }
-                msg = concat(msg, alt);
-                if( votes != NULL ){
-                    printf("Too much arguments. Try again.\n");
-                    break;
-                }
-                int n = sendmsg_to(csocket, msg);
-                if( n < 0 ){
-                    perror("Error writing to socket.\n");
-                    return 20;
-                }
-                int l = readn(csocket, answer);
-                if ( l < 0 ){
-                    printf("Error reading from socket.\n");
-                }
+                send_read(csocket, msg, answer);
                 printf(answer);
                 break;
             }
             case REMOVE:{
-                char msg_key[2];
-                snprintf(msg_key, sizeof(msg_key),"%d",key);
-                msg = msg_key;
-                msg = concat(msg, " ");
-                if( theme == NULL ){
-                    printf("Too few arguments. Try again.\n");
+                msg = make_massage(1, com_argv, key);
+                if(strcmp(msg,"Error") == 0)
                     break;
-                }
-                msg = concat(msg, theme);
-                if( alt != NULL ){
-                    printf("Too much arguments. Try again.\n");
-                    break;
-                }
-
-                int n = sendmsg_to(csocket, msg);
-                if( n < 0 ){
-                    perror("Error writing to socket.\n");
-                    return 20;
-                }
-                int l = readn(csocket, answer);
-                if ( l < 0 ){
-                    printf("Error reading from socket.\n");
-                }
+                send_read(csocket, msg, answer);
                 printf(answer);
                 break;
             }
             case LIST:{
-                char msg_key[2];
-                snprintf(msg_key, sizeof(msg_key),"%d",key);
-                msg = msg_key;
-                if( theme != NULL ){
-                    printf("Too much arguments. Try again.\n");
+                msg = make_massage(0, com_argv, key);
+                if(strcmp(msg,"Error") == 0)
                     break;
-                }
-                int n = sendmsg_to(csocket, msg);
-                if( n < 0 ){
-                    perror("Error writing to socket.\n");
-                    return 20;
-                }
-                int l = readn(csocket, answer);
-                if ( l < 0 ){
-                    printf("Error reading from socket.\n");
-                }
+                send_read(csocket, msg, answer);
                 printf(answer);
                 break;
             }
             case CHECK:{
-                char msg_key[2];
-                snprintf(msg_key, sizeof(msg_key),"%d",key);
-                msg = msg_key;
-                msg = concat(msg, " ");
-                if( theme == NULL ){
-                    printf("Too few arguments. Try again.\n");
+                msg = make_massage(1, com_argv, key);
+                if(strcmp(msg,"Error") == 0)
                     break;
-                }
-                msg = concat(msg, theme);
-                if( alt != NULL ){
-                    printf("Too much arguments. Try again.\n");
-                    break;
-                }
-                int n = sendmsg_to(csocket, msg);
-                if( n < 0 ){
-                    perror("Error writing to socket.\n");
-                    return 20;
-                }
-                int l = readn(csocket, answer);
-                if ( l < 0 ){
-                    printf("Error reading from socket.\n");
-                }
+                send_read(csocket, msg, answer);
                 printf(answer);
                 break;
             }
             case CHANGE:{
-                char msg_key[2];
-                snprintf(msg_key, sizeof(msg_key),"%d",key);
-                msg = msg_key;
-                msg = concat(msg, " ");
-                if( theme == NULL ){
-                    printf("Too few arguments. Try again.\n");
+                msg = make_massage(1, com_argv, key);
+                if(strcmp(msg,"Error") == 0)
                     break;
-                }
-                msg = concat(msg, theme);
-                if( alt != NULL ){
-                    printf("Too much arguments. Try again.\n");
-                    break;
-                }
-                int n = sendmsg_to(csocket, msg);
-                if( n < 0 ){
-                    perror("Error writing to socket.\n");
-                    return 20;
-                }
-                int l = readn(csocket, answer);
-                if ( l < 0 ){
-                    printf("Error reading from socket.\n");
-                }
+                send_read(csocket, msg, answer);
                 printf(answer);
-
                 break;
             }
             case VOTE:{
-                char msg_key[2];
-                snprintf(msg_key, sizeof(msg_key),"%d",key);
-                msg = msg_key;
-                msg = concat(msg, " ");
-                if( theme == NULL ){
-                    printf("Too few arguments. Try again.\n");
+                msg = make_massage(3, com_argv, key);
+                if(strcmp(msg,"Error") == 0)
                     break;
-                }
-                msg = concat(msg, theme);
-                msg = concat(msg, " ");
-                if( alt == NULL ){
-                    printf("Too few arguments. Try again.\n");
-                    break;
-                }
-                msg = concat(msg, alt);
-                msg = concat(msg, " ");
-                if( votes == NULL ){
-                    printf("Too few arguments. Try again.\n");
-                    break;
-                }
-                msg = concat(msg, votes);
-                if( trash != NULL ){
-                    printf("Too much arguments. Try again.\n");
-                    break;
-                }
-                int n = sendmsg_to(csocket, msg);
-                if( n < 0 ){
-                    perror("Error writing to socket.\n");
-                    return 20;
-                }
-                int l = readn(csocket, answer);
-                if ( l < 0 ){
-                    printf("Error reading from socket.\n");
-                }
+                send_read(csocket, msg, answer);
                 printf(answer);
+                char *tmp_answer = answer;
+                if(strcmp("Error:", strtok_r(tmp_answer," ", &saveptr)) == 0){
+                    printf("Error: %s", tmp_answer);
+                    break;
+                }
+                printf("%s %s", answer, saveptr);
+                limit_of_votes = limit_of_votes - atoi(com_argv[3]);
                 break;
             }
             case DISCONNECT:{
-                char msg_key[2];
-                snprintf(msg_key, sizeof(msg_key),"%d",key);
-                msg = msg_key;
-                if( theme != NULL ){
-                    printf("Too much arguments. Try again.\n");
+                msg = make_massage(0, com_argv, key);
+                if(strcmp(msg,"Error") == 0)
                     break;
-                }
-                int n = sendmsg_to(csocket, msg);
-                if( n < 0 ){
-                    perror("Error writing to socket.\n");
-                    return 20;
-                }
-                int l = readn(csocket, answer);
-                if ( l < 0 ){
-                    printf("Error reading from socket.\n");
-                }
-                printf(answer);                
+                send_read(csocket, msg, answer);
+                printf(answer);
                 return 0;
             }
             default:    {
@@ -300,8 +164,42 @@ int main(int argc , char *argv[])
                 printf("Type ""help"" to get list of available commands.\n");
                 break;
             }
-        }        
-        printf("-------------------------------------------------------------------------------\n");
+        }
+        printf("*******************************************************************************\n");
     }
     return 1;
+}
+
+char *make_massage(int argc, char *argv[], int key){
+    char msg_key[2];
+    char *massage;
+    snprintf(msg_key, sizeof(msg_key), "%d", key);
+    int i = 0;
+    for(i = 1; i <= argc; i++){
+        if(argv[i] == NULL){
+            printf("\nToo few arguments. Try again.\n\n");
+            return "Error";
+        }
+    }
+    if(argv[argc + 1] != NULL){
+        printf("\nToo much arguments. Try again.\n\n");
+        return "Error";
+    }
+    massage = msg_key;
+    for(i = 1; i <= argc; i++){
+        massage = concat(massage, " ");
+        massage = concat(massage, argv[i]);
+    }
+    return massage;
+}
+
+void send_read(int sock, char *massage, char *output){
+        char *tmp = massage;
+        if(send_package(sock, tmp) < 0)
+            exit(-1);
+        if(read_package(sock, output) < 0)
+            exit(-1);
+        printf("\nAnswer from server:\n\n");
+        printf("*******************************************************************************\n");
+        return;
 }

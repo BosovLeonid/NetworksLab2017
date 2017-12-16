@@ -1,14 +1,13 @@
 #include <server.h>
-
+const char *LOCALE = "Rus";
 int main(int argc, char *argv[])
 {
     WSADATA wsa;
     SOCKET serverSocket, accSocket;
-    struct sockaddr_in server,client;
+    struct sockaddr_in server, client;
 
-    setlocale(LC_ALL, "Rus");
-
-    printf("Voiting/raiting server ver.3\n");
+    setlocale(LC_ALL, LOCALE);
+    printf("Voiting/raiting server ver.4\n");
     printf("Server starting...\n");
 
     // Указываем рабочий каталог
@@ -19,13 +18,13 @@ int main(int argc, char *argv[])
         exit(0);
     }
 
-    if (WSAStartup(0x0202,&wsa) != 0)
+    if (WSAStartup(0x0202, &wsa) != 0)
     {
         printf("Failed. Error Code : %d\n", WSAGetLastError());
         return 1;
     }
     // Create a socket
-    if((serverSocket = socket(AF_INET , SOCK_STREAM , 0 )) == INVALID_SOCKET)
+    if((serverSocket = socket(AF_INET, SOCK_STREAM, 0 )) == INVALID_SOCKET)
     {
         printf("Could not create socket : %d\n" , WSAGetLastError());
     }
@@ -34,14 +33,14 @@ int main(int argc, char *argv[])
     server.sin_family = AF_INET;
     server.sin_port = htons( (UINT16)atoi(argv[1]) );
 
-    // Bind
-    if( bind(serverSocket ,(struct sockaddr *)&server , sizeof(server)) == SOCKET_ERROR)
+    // Bindы
+    if( bind(serverSocket, (struct sockaddr *)&server, sizeof(server)) == SOCKET_ERROR)
     {
         printf("Bind failed with error code : %d\n" , WSAGetLastError());
     }
 
     // Listen to incoming connections
-    listen(serverSocket , 5);
+    listen(serverSocket, 5);
     printf("Waiting for incoming connections...\n");
     int c = sizeof(struct sockaddr_in);
 
@@ -50,7 +49,7 @@ int main(int argc, char *argv[])
         args.ip = inet_ntoa(client.sin_addr);
         args.port = ntohs(client.sin_port);
         args.socket = accSocket;
-        HANDLE thread = CreateThread(NULL,0,connection_handler,&args,0,NULL);
+        HANDLE thread = CreateThread(NULL, 0, thread_handler, &args, 0, NULL);
         printf("Thread created for: %s:%d, socket: %d\n",inet_ntoa(client.sin_addr) ,ntohs(client.sin_port), args.socket);
     }
 

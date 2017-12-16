@@ -5,7 +5,7 @@ char* concat(char *s1, char *s2) {
     size_t len1 = strlen(s1);
     size_t len2 = strlen(s2);
 
-    char *result = (char*)malloc(len1 + len2 + 1);
+    char *result = (char*)calloc(len1 + len2 + 1, sizeof(char));
 
     if (!result) {
         fprintf(stderr, "malloc() failed: insufficient memory!\n");

@@ -1,36 +1,33 @@
 #include <server.h>
 // Добавляем новую тему
 void add_theme(char *name){
-    char *PATH, word[256], *tmp;
+    char *PATH, word[256], *tmp, *saveptr;
     FILE *themes;
-    PATH = concat(CURRENT_DIR,"/THEMES/");
-    chdir(PATH);
-    themes = fopen("themes.txt", "a+t");
-    if (themes == NULL){
-        printf("Error while opening file themes.txt.\n");
-        answer = "An error has occurred on server.\n";
+    PATH = concat(CURRENT_DIR,"/THEMES/themes.txt");
+    // Проверяем наличие файла
+    themes = fopen(PATH, "a+t");
+    if (check_file(themes, PATH) != 0){
         return;
-    }
+    };
+    // Проверяем наличие темы
     while (fgets(word, sizeof(word), themes))
     {
-    tmp = strtok(word,"-");
-    if(strcmp(tmp,name) == 0){
-        answer = concat("Theme ", name);
-        answer = concat(answer, " already exists.\n");
-        fclose(themes);
-        chdir(CURRENT_DIR);
-        free(PATH);
-        return;
+        tmp = strtok_r(word,"-", &saveptr);
+        if(strcmp(tmp,name) == 0){
+            answer = concat("Theme ", name);
+            answer = concat(answer, " already exists.\n");
+            fclose(themes);
+            free(PATH);
+            return;
+        }
     }
-    }
-    fprintf(themes,"%s-closed;\n",name);
-
+    fprintf(themes, "%s-closed;\n", name);
+    PATH = concat(CURRENT_DIR,"/THEMES/");
     PATH = concat(PATH, name);
     mkdir(PATH);
     fclose(themes);
     answer = concat("Theme ", name);
     answer = concat(answer, " created.\n");
-    chdir(CURRENT_DIR);
     free(PATH);
     return;
 }
